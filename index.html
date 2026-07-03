@@ -1,301 +1,1040 @@
-<!doctype html>
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>谢一涵 Ella | Builder</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-    }
-  }
-  </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Mini Wander — a Code Boutique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+:root{--green:#324434;--yellow:#ffa61e;--greyGreen:#afbead;--dark:#141414;--header-h:130px;--ease:cubic-bezier(.87,0,.13,1)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--green);color:var(--yellow);overflow-x:hidden;line-height:1.4}
+a{color:inherit;text-decoration:none}
+
+body{cursor:none}
+#cursor-dot{position:fixed;top:0;left:0;width:10px;height:10px;background:var(--yellow);border-radius:50%;z-index:9999;pointer-events:none;mix-blend-mode:difference;transition:width .2s,height .2s}
+#cursor-ring{position:fixed;top:0;left:0;width:34px;height:34px;border:1.5px solid rgba(255,166,30,.45);border-radius:50%;z-index:9998;pointer-events:none;transition:width .25s,height .25s}
+#cursor-dot.hover{width:20px;height:20px;background:#ffe545}
+#cursor-ring.hover{width:50px;height:50px;border-color:#ffe545}
+@media(max-width:768px){#cursor-dot,#cursor-ring{display:none}body{cursor:auto}}
+
+#noise{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:.035;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:200px 200px}
+
+#curtain{position:fixed;inset:0;z-index:100;background:var(--yellow);transform:translateY(-100%);transition:transform .7s var(--ease);display:flex;align-items:center;justify-content:center;pointer-events:none}
+#curtain.show{transform:translateY(0);pointer-events:all}
+#curtain .wordmark{width:120px;height:120px;animation:curtainSpin .6s var(--ease)}
+@keyframes curtainSpin{from{transform:rotate(-90deg);opacity:0}to{transform:rotate(0);opacity:1}}
+
+#header{position:fixed;top:0;left:0;width:100%;height:var(--header-h);z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;color:var(--yellow);mix-blend-mode:difference;transition:background .35s}
+#header.scrolled{background:rgba(50,68,52,.9);backdrop-filter:blur(12px);mix-blend-mode:normal}
+#logo{width:120px;height:120px;object-fit:contain;isolation:isolate}
+#nav{display:flex;gap:2.2rem}
+#nav a{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-weight:600;position:relative;cursor:none}
+#nav a::after{content:"";position:absolute;left:0;bottom:-4px;width:100%;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
+#nav a:hover::after,#nav a.active::after{transform:scaleX(1)}
+#menu-btn{display:none;background:none;border:none;cursor:none;z-index:55}
+#menu-btn span{display:block;width:24px;height:2px;background:var(--yellow);margin:5px 0;transition:.3s}
+@media(max-width:768px){#nav{display:none}#menu-btn{display:block}#nav.open{display:flex;flex-direction:column;position:absolute;top:var(--header-h);left:0;width:100%;background:var(--green);padding:2rem;gap:1.5rem;z-index:49}}
+
+#hero{position:fixed;top:0;left:0;width:100%;height:100vh;height:100dvh;overflow:hidden;z-index:1}
+@keyframes heroBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+#hero-bg{position:absolute;top:-15%;left:-15%;width:130%;height:130%;transform-style:preserve-3d;will-change:transform;animation:heroBreath 6s ease-in-out infinite}
+
+#hero-video-a,#hero-video-b{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#hero-video-a{opacity:0;z-index:0} /* hidden, drawn to canvas */
+#hero-video-b{opacity:0;z-index:0}
+
+#hero-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+#hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(10,12,8,.6));pointer-events:none;z-index:3}
+#hero-hint{position:absolute;bottom:3rem;left:50%;transform:translateX(-50%);z-index:10;font-size:.65rem;text-transform:uppercase;letter-spacing:.15em;color:var(--yellow);opacity:.8;pointer-events:none;transition:opacity .8s ease}
+#hero-hint.gone{opacity:0}
+#hero-text{position:absolute;bottom:4rem;left:50%;transform:translateX(-50%);z-index:10;pointer-events:none;transition:opacity .8s ease,transform .3s;text-align:center}
+#hero-text .eyebrow{font-size:clamp(1.4rem,4vw,2.4rem);text-transform:none;letter-spacing:.04em;margin-bottom:0;opacity:.9;font-weight:400;font-family:"Playfair Display",serif;font-style:italic}
+#hero-text h1{font-family:"Playfair Display",serif;font-size:clamp(2rem,5vw,3.8rem);font-weight:700;line-height:1.12}
+#hero-text h1 em{font-style:italic;font-weight:400}
+#hero-text p{font-size:.8rem;line-height:1.65;opacity:.75;margin-top:.8rem;max-width:400px;color:var(--greyGreen)}
+#hero-text.hidden{opacity:0;pointer-events:none}
+
+#hero-spacer{height:105vh}
+#main{position:relative;z-index:3;background:var(--green);padding:5rem 2.5rem 8rem}
+@media(max-width:768px){#main{padding:3rem 1.5rem 6rem}}
+.sec-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.14em;color:var(--greyGreen);font-weight:600;margin-bottom:.2rem}
+.sec-title{font-family:"Playfair Display",serif;font-size:clamp(2.2rem,5vw,4.2rem);font-weight:700;line-height:1.1;margin-bottom:3rem}
+.sec-title em{font-style:italic;font-weight:400}
+#cases,#work-cases{display:grid;grid-template-columns:repeat(2,1fr);gap:2rem;margin-bottom:5rem}
+@media(max-width:768px){#cases,#work-cases{grid-template-columns:1fr}}
+.case{position:relative;overflow:hidden;border-radius:6px;aspect-ratio:4/3;background:var(--dark);cursor:none;transition:transform .4s var(--ease)}
+.case:hover{transform:translateY(-6px)}
+.case img{width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease)}
+.case:hover img{transform:scale(1.04)}
+.case .info{position:absolute;bottom:0;left:0;width:100%;padding:2.5rem 1.8rem 1.8rem;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff}
+.case .client{font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin-bottom:.25rem}
+.case .name{font-family:"Playfair Display",serif;font-size:1.2rem;font-weight:700;margin-bottom:.3rem}
+.case .desc{font-size:.72rem;opacity:.8;line-height:1.45}
+#clients{display:flex;flex-wrap:wrap;gap:1.5rem 3rem;align-items:center;justify-content:center;padding:4rem 0;margin-bottom:5rem;border-top:1px solid rgba(255,166,30,.15);border-bottom:1px solid rgba(255,166,30,.15)}
+#clients span{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--greyGreen);font-weight:600}
+#expertise,#work-expertise{display:grid;grid-template-columns:repeat(3,1fr);gap:2.5rem;margin-bottom:5rem}
+@media(max-width:768px){#expertise,#work-expertise{grid-template-columns:1fr}}
+.exp-card{padding:2rem 0;border-top:1px solid rgba(255,166,30,.2);transition:border-color .3s}
+.exp-card:hover{border-top-color:var(--yellow)}
+.exp-num{font-size:.58rem;color:var(--greyGreen);letter-spacing:.1em;margin-bottom:.7rem}
+.exp-title{font-family:"Playfair Display",serif;font-size:1.3rem;font-weight:700;margin-bottom:.5rem}
+.exp-desc{font-size:.76rem;color:var(--greyGreen);line-height:1.6}
+#footer{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;padding:4rem 0 2rem;border-top:1px solid rgba(255,166,30,.15)}
+@media(max-width:768px){#footer{grid-template-columns:1fr}}
+#footer h4{font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--greyGreen);margin-bottom:1rem}
+#footer a,#footer p{font-size:.76rem;line-height:2;display:block;transition:opacity .2s}
+#footer a:hover{opacity:.55}
+#footer .bottom{grid-column:1/-1;text-align:center;padding-top:3rem;font-size:.62rem;color:var(--greyGreen);display:flex;gap:2rem;justify-content:center;flex-wrap:wrap}
+#footer .bottom a{color:var(--greyGreen)}#footer .bottom a:hover{color:var(--yellow)}
+
+/* ── Detail Lightbox ── */
+.detail-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.detail-overlay.show{opacity:1;pointer-events:all}
+.detail-modal{background:var(--dark);border:1.5px solid rgba(255,166,30,.3);border-radius:12px;max-width:620px;width:92%;max-height:80vh;overflow-y:auto;padding:2.5rem 2rem 2rem;position:relative;transform:translateY(30px);transition:transform .5s cubic-bezier(.87,0,.13,1);scrollbar-width:none}
+.detail-overlay.show .detail-modal{transform:translateY(0)}
+.detail-modal::-webkit-scrollbar{display:none}
+.detail-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--yellow);font-size:1.5rem;cursor:pointer;transition:transform .3s ease;line-height:1;padding:4px}
+.detail-close:hover{transform:rotate(90deg)}
+.detail-modal .dm-client{font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;color:var(--greyGreen);opacity:.7;margin-bottom:6px}
+.detail-modal .dm-title{font-family:"Playfair Display",serif;font-size:1.4rem;font-weight:700;color:var(--yellow);margin-bottom:12px}
+.detail-modal .dm-desc{font-size:.78rem;color:var(--greyGreen);line-height:1.7;margin-bottom:16px}
+.detail-modal .dm-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,166,30,.2),transparent);margin:0 0 16px}
+.detail-modal .dm-section{margin-bottom:14px}
+.detail-modal .dm-section h4{font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--yellow);opacity:.7;margin-bottom:6px}
+.detail-modal .dm-section p,.detail-modal .dm-section li{font-size:.72rem;color:var(--greyGreen);line-height:1.7}
+.detail-modal .dm-section ul{list-style:none;padding:0}
+.detail-modal .dm-section ul li{padding:3px 0 3px 14px;position:relative}
+.detail-modal .dm-section ul li::before{content:"·";position:absolute;left:0;color:var(--yellow)}
+.detail-modal .dm-section ul li strong{color:var(--yellow)}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal.on{opacity:1;transform:translateY(0)}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}
+.page{display:none}.page.show{display:block}
+.about-page{padding-top:.5rem}
+#page-about.show #main{padding-top:2rem;padding-bottom:3rem}
+.about-page h2{font-family:"Ma Shan Zheng","Long Cang","Zhi Mang Xing","Playfair Display",serif;font-size:clamp(1.8rem,3.5vw,3rem);font-weight:400;line-height:1.25;margin-bottom:.5rem}
+.about-page h2 em{font-style:normal;font-weight:400}
+/* Work page */
+.work-page{padding-top:.5rem}
+.work-page .sec-title{margin-bottom:1.5rem}
+/* ═══════════ Wave Gallery — frosted-glass polaroids on water ═══════════ */
+.memory-gallery{padding:.3rem 0 0;overflow:visible}
+.wave-stage{position:relative;min-height:550px;overflow:visible}
+@media(max-width:768px){.wave-stage{min-height:400px}}
+
+/* ── Card ── */
+.wave-card{position:absolute;cursor:none;z-index:1;transition:opacity .6s var(--ease),filter .6s var(--ease)}
+.wave-card.dimmed{opacity:.1;filter:grayscale(70%) blur(2px);pointer-events:none}
+.wave-card.centered{z-index:20}
+.wave-card.centered .card-inner{transform:scale(1.65)}
+@media(max-width:768px){.wave-card.centered .card-inner{transform:scale(1.3)}}
+
+/* ── 3D flip ── */
+.card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;perspective:1400px;transition:transform .85s cubic-bezier(.25,1.2,.5,1),scale .7s var(--ease)}
+.wave-card.flipped .card-inner{transform:rotateY(180deg) scale(1.65)}
+@media(max-width:768px){.wave-card.flipped .card-inner{transform:rotateY(180deg) scale(1.3)}}
+
+/* ── Front — frosted glass polaroid ── */
+.card-front,.card-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:8px;overflow:hidden}
+.card-front{display:flex;flex-direction:column;
+  background:linear-gradient(150deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.04) 45%,rgba(255,255,255,.08) 100%);
+  backdrop-filter:blur(22px) saturate(1.3);-webkit-backdrop-filter:blur(22px) saturate(1.3);
+  border:1.5px solid rgba(255,255,255,.15);
+  box-shadow:0 8px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.1);
+  padding:8px 8px 0 8px;transition:border-color .6s,box-shadow .6s}
+.card-front::after{content:"";position:absolute;inset:0;border-radius:8px;pointer-events:none;z-index:5;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  opacity:.45;mix-blend-mode:overlay}
+.card-front-img{flex:1;overflow:hidden;border-radius:4px;position:relative;z-index:1}
+.card-front-img img{width:100%;height:100%;object-fit:cover;opacity:.45;filter:grayscale(18%);transition:all 1.4s var(--ease)}
+.wave-card:hover .card-front-img img,.wave-card.centered .card-front-img img,.wave-card.flipped .card-front-img img{opacity:1;filter:none}
+.card-shimmer{position:absolute;inset:8px 8px 0 8px;border-radius:4px;z-index:3;opacity:0;pointer-events:none;
+  background:linear-gradient(135deg,transparent 30%,rgba(255,166,30,.1) 50%,transparent 70%);background-size:200% 200%}
+.wave-card.flipped .card-shimmer{opacity:1;animation:shimmerSweep 2s ease-in-out infinite}
+@keyframes shimmerSweep{0%{background-position:200% 200%}100%{background-position:-200% -200%}}
+.card-label{padding:12px 6px 10px;text-align:center;position:relative;z-index:2}
+.card-label .cl-year{display:block;font-size:.65rem;font-weight:700;color:var(--yellow);opacity:.45;letter-spacing:.08em;transition:opacity .5s}
+.card-label .cl-name{display:block;font-size:.55rem;color:var(--greyGreen);margin-top:3px;text-transform:uppercase;letter-spacing:.1em;transition:color .5s}
+.wave-card.centered .cl-year,.wave-card.flipped .cl-year{opacity:1}
+.wave-card.centered .cl-name,.wave-card.flipped .cl-name{color:var(--yellow)}
+
+/* ── Back ── */
+.card-back{transform:rotateY(180deg);display:flex;flex-direction:column;
+  background:rgba(16,18,16,.99);backdrop-filter:blur(36px);-webkit-backdrop-filter:blur(36px);
+  border:1.5px solid rgba(255,166,30,.4);
+  box-shadow:0 0 60px rgba(255,166,30,.2),inset 0 0 50px rgba(255,166,30,.05);
+  padding:14px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+.card-back .cb-title{font-family:"Playfair Display",serif;font-size:.95rem;font-weight:700;color:var(--yellow);margin-bottom:4px}
+.card-back .cb-year{font-size:.5rem;margin-bottom:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--greyGreen);margin-bottom:14px;display:block;opacity:.7}
+.card-back .cb-summary{font-size:.6rem;color:var(--greyGreen);line-height:1.7;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,166,30,.1)}
+.card-back .cb-detail{font-size:.56rem;color:var(--greyGreen);line-height:1.75}
+.card-back .cb-detail p{margin-bottom:4px}
+.card-back .cb-detail p strong{color:var(--yellow);opacity:.85}
+.card-back .cb-detail ul{list-style:none;padding:0;margin:6px 0}
+.card-back .cb-detail ul li{padding-left:0;margin-bottom:5px;position:relative;line-height:1.6}
+.card-back .cb-detail ul li strong{color:var(--yellow);opacity:.85}
+.card-back .cb-tag{display:inline-block;font-size:.45rem;text-transform:uppercase;letter-spacing:.08em;color:var(--greyGreen);opacity:.6;margin-bottom:6px}
+.card-back .cb-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,166,30,.25),transparent);margin:4px 0 8px}
+.card-back .cb-stat{display:block;font-family:"STKaiti","KaiTi","Ma Shan Zheng","Playfair Display",serif;font-size:.78rem;font-weight:400;color:var(--yellow);line-height:1.3;margin:2px 0 8px;letter-spacing:.04em}
+.card-back::-webkit-scrollbar{display:none}
+.card-back .cb-hint{font-size:.45rem;padding-top:8px;color:rgba(175,190,173,.3);margin-top:auto;padding-top:10px;text-align:center;letter-spacing:.06em}
+
+/* ── Sizes ── */
+.wave-card{width:230px;min-height:307px}
+.wave-card:nth-child(3){width:265px;min-height:353px}
+@media(max-width:768px){.wave-card{width:150px;min-height:200px}.wave-card:nth-child(3){width:180px;min-height:240px}}
+
+/* ── Divider ── */
+.magic-divider{display:flex;align-items:center;justify-content:center;margin:.8rem 0 0}
+.magic-divider span{display:block;width:60%;max-width:300px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,166,30,.35),transparent);position:relative}
+.magic-divider span::after{content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--yellow);box-shadow:0 0 12px rgba(255,166,30,.6)}
+
+/* ═══════════ Creek Timeline — flowing stream ═══════════ */
+.creek-wrap{position:relative;max-width:720px;margin:1.2rem auto 0;padding:0 2rem;height:70px;overflow:visible}
+@media(max-width:768px){.creek-wrap{max-width:100%;padding:0 1rem;height:55px}}
+
+/* The stream line — subtle flowing water */
+.creek-line{position:absolute;left:2rem;right:2rem;top:14px;height:3px;border-radius:2px;
+  background:linear-gradient(90deg,
+    rgba(175,190,173,.06),rgba(175,190,173,.12),rgba(255,166,30,.08),rgba(175,190,173,.12),rgba(175,190,173,.06));
+  overflow:hidden}
+.creek-line::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 30%,rgba(255,166,30,.15) 45%,rgba(255,200,120,.08) 50%,rgba(255,166,30,.15) 55%,transparent 70%);
+  background-size:200% 100%;
+  animation:creekFlow 4s linear infinite}
+@keyframes creekFlow{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Markers along the stream */
+.creek-markers{position:absolute;left:2rem;right:2rem;top:6px;display:flex;justify-content:space-between;padding:0 3%}
+.creek-marker{position:relative;display:flex;flex-direction:column;align-items:center;transition:all .5s var(--ease)}
+.creek-marker .cm-dot{width:4px;height:4px;border-radius:50%;background:rgba(175,190,173,.15);transition:all 1.4s var(--ease)}
+.creek-marker.active .cm-dot{width:7px;height:7px;background:var(--yellow);box-shadow:0 0 14px rgba(255,166,30,.6)}
+
+/* Year label — rises from the stream */
+.creek-marker .cm-year{position:absolute;top:12px;white-space:nowrap;font-size:.55rem;font-weight:700;color:var(--yellow);letter-spacing:.06em;
+  opacity:0;transform:translateY(8px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.creek-marker.active .cm-year{opacity:1;transform:translateY(0)}
+
+/* Gliding light spot — moves to active marker */
+.creek-glide{position:absolute;top:-3px;width:12px;height:12px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,166,30,.9) 0%,rgba(255,166,30,.2) 50%,transparent 70%);
+  box-shadow:0 0 20px rgba(255,166,30,.5),0 0 40px rgba(255,166,30,.15);
+  transition:left .8s cubic-bezier(.25,.8,.25,1.2);z-index:5;pointer-events:none;
+  opacity:0}
+.creek-glide.visible{opacity:1}
+
+/* ── Lightbox ── */
+#lightbox{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(10,12,8,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:2rem;opacity:0;transition:opacity .35s ease}
+#lightbox.show{display:flex;opacity:1}
+#lightbox-inner{background:var(--dark);border:1px solid rgba(255,166,30,.2);border-radius:10px;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:2rem 2rem 1.5rem;position:relative;scrollbar-width:none}
+#lightbox-inner::-webkit-scrollbar{display:none}
+#lightbox-close{position:absolute;top:12px;right:14px;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,166,30,.25);background:transparent;color:var(--yellow);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .3s;line-height:1}
+#lightbox-close:hover{background:rgba(255,166,30,.12)}
+#lightbox h3{font-family:"Playfair Display",serif;font-size:1.4rem;color:var(--yellow);margin-bottom:2px}
+#lightbox .lb-client{font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;color:var(--greyGreen);opacity:.7;margin-bottom:12px;display:block}
+#lightbox .lb-section{margin-bottom:16px}
+#lightbox .lb-section:last-child{margin-bottom:0}
+#lightbox .lb-label{font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;color:var(--yellow);opacity:.7;margin-bottom:6px;display:block}
+#lightbox .lb-text{font-size:.78rem;color:var(--greyGreen);line-height:1.75}
+#lightbox .lb-text p{margin-bottom:6px}
+#lightbox .lb-bullets{list-style:none;padding:0;margin:4px 0 8px}
+#lightbox .lb-bullets li{padding-left:14px;position:relative;font-size:.76rem;color:var(--greyGreen);line-height:1.7;margin-bottom:3px}
+#lightbox .lb-bullets li::before{content:"·";position:absolute;left:2px;color:var(--yellow);font-weight:700}
+#lightbox .lb-tag{display:inline-block;font-size:.5rem;padding:2px 8px;border:1px solid rgba(255,166,30,.2);border-radius:3px;color:var(--yellow);margin:2px 4px 2px 0}
+#lightbox .lb-btn{display:inline-block;margin-top:12px;padding:8px 20px;border:1px solid var(--yellow);border-radius:6px;color:var(--yellow);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;transition:background .3s;cursor:pointer}
+#lightbox .lb-btn:hover{background:rgba(255,166,30,.1)}
+@media(max-width:768px){#lightbox{padding:1rem}#lightbox-inner{padding:1.5rem 1.2rem 1rem}#lightbox h3{font-size:1.1rem}}
+
+@media(max-width:768px){
+  .creek-line{top:16px;height:2px}.creek-markers{top:8px}
+  .creek-marker .cm-dot{width:3px;height:3px}
+  .creek-marker.active .cm-dot{width:5px;height:5px}
+  .creek-marker .cm-year{font-size:.48rem;top:10px}
+  .creek-glide{width:10px;height:10px;top:-2px}
+}
+
+.footer-quote{font-family:"Playfair Display",serif;font-style:italic;font-size:.85rem;color:var(--yellow);opacity:.7;margin-bottom:.8rem;letter-spacing:.02em}
+.footer-icons{display:flex;gap:1.2rem;justify-content:center}
+.footer-icons a{color:var(--greyGreen);transition:color .3s}
+.footer-icons a:hover{color:var(--yellow)}
+.contact-page{padding-top:2rem}
+.contact-page h2{font-family:"Playfair Display",serif;font-size:clamp(1.8rem,3.5vw,3rem);font-weight:700;margin-bottom:2.5rem}
+.contact-page h2 em{font-style:italic;font-weight:400}
+.contact-links{display:flex;flex-direction:column;gap:1.5rem}
+.contact-item{display:flex;align-items:center;gap:1rem;padding:1.2rem 1.5rem;border:1px solid rgba(255,166,30,.15);border-radius:8px;transition:border-color .3s,background .3s;cursor:none}
+.contact-item:hover{border-color:var(--yellow);background:rgba(255,166,30,.06)}
+.contact-item svg{flex-shrink:0;color:var(--yellow)}
+.contact-item span{font-size:.9rem;color:var(--greyGreen);transition:color .3s}
+.contact-item:hover span{color:var(--yellow)}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start}
+.contact-left{display:flex;flex-direction:column;gap:1rem}
+.contact-status{font-size:.82rem;color:var(--greyGreen);line-height:1.6;margin-bottom:.5rem;padding:1rem 1.5rem;border:1px solid rgba(255,166,30,.12);border-radius:8px;background:rgba(255,166,30,.03)}
+.contact-status strong{color:var(--yellow)}
+.rc-btn{display:inline-block;padding:.7rem 1.8rem;border:1.5px solid var(--yellow);border-radius:8px;color:var(--yellow);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;transition:all .3s;cursor:pointer;background:transparent}
+.rc-btn:hover{background:rgba(255,166,30,.1);box-shadow:0 0 20px rgba(255,166,30,.15)}
+.contact-right{display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+.contact-illustration{width:100%;max-width:300px}
+.contact-illustration img{width:100%;height:auto;display:block}
+@media(max-width:768px){.contact-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 
-  <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
-  <div class="three-overlay" id="threeOverlay"></div>
-  <div class="skip-hint" id="skipHint">点击任意位置跳过动画 ▸</div>
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+<div id="noise"></div>
 
-  <main class="main-content" id="mainContent">
-    <section class="hero" id="hero">
-      <div class="hero-inner reveal">
-        <div class="hero-affiliation">
-          <img src="assets/zj-logo.png" alt="浙江股权服务集团" class="affiliation-logo" />
-          <span class="affiliation-label">浙江股权服务集团</span>
+<div id="curtain">
+  <img class="wordmark" src="logo-icon.png" alt="MW">
+</div>
+
+<header id="header">
+  <a href="#" onclick="go('home');return false">
+    <img id="logo" src="logo-icon.png" alt="Mini Wander">
+  </a>
+  <nav id="nav">
+    <a href="#" data-p="home" class="active" onclick="go('home');return false">Explore</a>
+    <a href="#" data-p="work" onclick="go('work');return false">Work</a>
+    <a href="#" data-p="about" onclick="go('about');return false">About</a>
+    <a href="#" data-p="contact" onclick="go('contact');return false">Contact</a>
+  </nav>
+  <button id="menu-btn" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+</header>
+
+<section id="hero">
+  <div id="hero-bg">
+    <video id="hero-video-a" src="video-1.mp4" muted playsinline preload="auto"></video>
+    <video id="hero-video-b" src="video-2.mp4" muted playsinline preload="auto"></video>
+    <canvas id="hero-fx"></canvas>
+  </div>
+  <div id="hero-hint">Click to continue</div>
+  <div id="hero-text">
+    <div class="eyebrow">mini wander</div>
+  </div>
+</section>
+<div id="hero-spacer"></div>
+
+<main id="main">
+  <div class="page show" id="page-home">
+    <div class="sec-label reveal">Portfolio</div>
+    <div class="sec-title reveal">What I've <em>Built</em></div>
+    <div id="cases"></div>
+    <div id="clients" class="reveal"><span>技术栈 &amp; 工具</span><span>HTML/CSS/JS</span><span>ChatGPT</span><span>Codex</span><span>WorkBuddy</span><span>Python</span><span>Excel/VBA</span></div>
+    <div class="sec-label reveal">Capabilities</div>
+    <div class="sec-title reveal">What I <em>Bring</em></div>
+    <div id="expertise"></div>
+  </div>
+    <div class="page" id="page-work">
+    <div class="work-page">
+      <div class="sec-label reveal">Work</div>
+      <div class="sec-title reveal">What I've <em>Built</em></div>
+      <div id="work-cases"></div>
+      <div id="work-clients" class="reveal"><span>技术栈 &amp; 工具</span><span>HTML/CSS/JS</span><span>ChatGPT</span><span>Codex</span><span>WorkBuddy</span><span>Python</span><span>Excel/VBA</span></div>
+      <div class="sec-label reveal">Capabilities</div>
+      <div class="sec-title reveal">What I <em>Bring</em></div>
+      <div id="work-expertise"></div>
+    </div>
+  </div>
+  <div class="page" id="page-about">
+    <div class="about-page">
+      <div class="sec-label reveal">About</div>
+      <h2 class="reveal">谢<em>一涵</em></h2>
+      <!-- Memory Fragments: photo gallery -->
+                        <div class="memory-gallery reveal" id="memory-gallery">
+        <div class="wave-stage" id="wave-stage">
+          <div class="wave-line"></div>
+          <div class="wave-card" data-idx="0" onclick="flipCard(0)">
+            <div class="card-inner">
+              <div class="card-front">
+                <div class="card-front-img"><img src="利兹.jpg" alt="利兹大学" loading="lazy"><div class="card-shimmer"></div></div>
+                <div class="card-label"><span class="cl-year">2020 — 2023</span><span class="cl-name">利兹大学</span></div>
+              </div>
+              <div class="card-back">
+                <span class="cb-year">2020 — 2023</span>
+                <div class="cb-title">利兹大学</div>
+                <div class="cb-summary">国际商务学士 · 一等荣誉学位</div>
+                <div class="cb-detail"><span class="cb-tag">商业分析 · 自主决策</span><div class="cb-divider"></div><strong class="cb-stat">GPA 3.8/4.0 · 一等荣誉</strong><ul><li><strong>商业计划书 · </strong>独立完成《科技初创企业国际化方案》，从市场进入策略选择、竞品对标分析到财务预测模型，搭建完整的商业叙事与价值论证框架</li><li><strong>全流程自主决策 · </strong>留学申请、选课策略、硕士申请全部 DIY，零中介依赖下独立完成多国多校申请策略设计，锻炼结构化规划与风险预判能力</li><li><strong>核心课程 · </strong>跨文化管理、国际战略管理、高级决策分析，全科高分获得一等荣誉学位</li></ul></div>
+                <span class="cb-hint">点击空白处翻回</span>
+              </div>
+            </div>
+          </div>
+          <div class="wave-card" data-idx="1" onclick="flipCard(1)">
+            <div class="card-inner">
+              <div class="card-front">
+                <div class="card-front-img"><img src="天识科技.jpg" alt="天识科技" loading="lazy"><div class="card-shimmer"></div></div>
+                <div class="card-label"><span class="cl-year">2021 — 2022</span><span class="cl-name">天识科技</span></div>
+              </div>
+              <div class="card-back">
+                <span class="cb-year">2021 — 2022</span>
+                <div class="cb-title">天识科技</div>
+                <div class="cb-summary">数据分析实习 · 跨境选品</div>
+                <div class="cb-detail"><span class="cb-tag">数据驱动 · 选品模型</span><div class="cb-divider"></div><strong class="cb-stat">100+ 企业 × 500+ 货品</strong><ul><li><strong>四维成本分析 · </strong>从原料成本、制造工艺复杂度、物流费率、平台佣金四个维度拆解每款商品的利润结构，覆盖消耗品、家居、3C 电子等多品类跨境供应链</li><li><strong>量化选品模型 · </strong>建立可复用的选品评分卡——将传统的"凭经验挑品"转化为数据驱动的体系化方法，完成 100+ 款商品的全球竞品全维度对比分析</li><li><strong>业务成果 · </strong>为 100+ 家跨境企业精准匹配 500+ 款严选货品，输出标准化选品推荐清单</li></ul></div>
+                <span class="cb-hint">点击空白处翻回</span>
+              </div>
+            </div>
+          </div>
+          <div class="wave-card" data-idx="2" onclick="flipCard(2)">
+            <div class="card-inner">
+              <div class="card-front">
+                <div class="card-front-img"><img src="物产中大.jpg" alt="物产中大" loading="lazy"><div class="card-shimmer"></div></div>
+                <div class="card-label"><span class="cl-year">2022</span><span class="cl-name">物产中大</span></div>
+              </div>
+              <div class="card-back">
+                <span class="cb-year">2022</span>
+                <div class="cb-title">物产中大</div>
+                <div class="cb-summary">内勤管理实习 · 大宗商品产业链</div>
+                <div class="cb-detail"><span class="cb-tag">产业链研究 · SAP 实战</span><div class="cb-divider"></div><strong class="cb-stat">PVC 产业链 · SAP 实战</strong><ul><li><strong>PVC 产业链调研 · </strong>跟踪上游电石价格波动、中游加工产能利用率、下游需求周期及进出口政策调整，独立完成产业链分析报告，建立"原料→加工→需求→政策"四环分析框架</li><li><strong>跨部门数据拉通 · </strong>日均处理 500+ 笔订单及库存数据，通过 SAP 系统完成销售与财务口径对齐，为管理层输出日常决策数据底稿</li><li><strong>认知升级 · </strong>从单点业务数据扩展到全链条产业视角，形成可复用的产业链研究方法论</li></ul></div>
+                <span class="cb-hint">点击空白处翻回</span>
+              </div>
+            </div>
+          </div>
+          <div class="wave-card" data-idx="3" onclick="flipCard(3)">
+            <div class="card-inner">
+              <div class="card-front">
+                <div class="card-front-img"><img src="南洋理工大学.jpg" alt="南洋理工大学" loading="lazy"><div class="card-shimmer"></div></div>
+                <div class="card-label"><span class="cl-year">2023 — 2024</span><span class="cl-name">南洋理工大学</span></div>
+              </div>
+              <div class="card-back">
+                <span class="cb-year">2023 — 2024</span>
+                <div class="cb-title">南洋理工大学</div>
+                <div class="cb-summary">国际政治经济学硕士 · 半额奖学金</div>
+                <div class="cb-detail"><span class="cb-tag">政策分析 · 跨文化协作</span><div class="cb-divider"></div><strong class="cb-stat">半额奖学金 · RSIS 学院</strong><ul><li><strong>RSIS 专业训练 · </strong>专攻政治风险分析、区域一体化与贸易政策，建立将宏观政策框架（区域贸易协定变化、关税调整、地缘政治事件）翻译为商业风险判断的方法论</li><li><strong>学生会秘书 · </strong>协调覆盖 10+ 国家的国际学生事务，组织跨文化活动，积累多元文化环境下的沟通协商与项目管理经验</li><li><strong>核心课程 · </strong>全球经济中的区域一体化、政治风险分析、贸易政策分析，形成地缘政治视角下的结构化商业决策思维</li></ul></div>
+                <span class="cb-hint">点击空白处翻回</span>
+              </div>
+            </div>
+          </div>
+          <div class="wave-card" data-idx="4" onclick="flipCard(4)">
+            <div class="card-inner">
+              <div class="card-front">
+                <div class="card-front-img"><img src="about-photo.jpg" alt="浙股产发" loading="lazy"><div class="card-shimmer"></div></div>
+                <div class="card-label"><span class="cl-year">2025 — 至今</span><span class="cl-name">浙股产发</span></div>
+              </div>
+              <div class="card-back">
+                <span class="cb-year">2025 — 至今</span>
+                <div class="cb-title">浙股产发</div>
+                <div class="cb-summary">金融服务部管培生 · 自研 SaaS 系统</div>
+                <div class="cb-detail"><span class="cb-tag">AI-Native 全栈 · 商业产品</span><div class="cb-divider"></div><strong class="cb-stat">3 周 · 4500 行 · SaaS 上线</strong><ul><li><strong>SaaS 系统交付 · </strong>独立完成园区管理 SaaS 全栈开发：设计项目「线索获取→初次对接→实地考察→方案谈判→签约入驻→存续服务」6 阶段全生命周期，内置 120 天黄色预警 / 240 天风险回收业务规则引擎。5 轮迭代交付 3 套定制变体，成本约为传统外包的 30%</li><li><strong>平台合作 · </strong>主导与阿里资产平台合作，推动 20+ 项园区资产线上化展示与标准化录入</li><li><strong>产业分析 · </strong>为常山县股权市场试点设计三维企业分类框架（行业属性 × 成长阶段 × 规范程度），对 60+ 企业完成分层分类并构建产业链图谱，输出被政府采纳的《常山县股权市场试点工作报告》</li></ul></div>
+                <span class="cb-hint">点击空白处翻回</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="hero-glitch" data-text="SYS.INIT → BUILDING...">SYS.INIT → BUILDING...</div>
-        <h1 class="hero-name">谢一涵 Ella</h1>
-        <p class="hero-tagline">
-          在<em>资本</em>、<em>政策</em>与<em>AI</em>的交汇处<br />建造可以落地的产品
-        </p>
-        <div class="hero-actions">
-          <a href="#capabilities" class="btn btn-primary">探索能力</a>
-          <a href="#projects" class="btn btn-magenta">查看项目</a>
+      </div>
+      <div class="magic-divider reveal"><span></span></div>
+      <!-- Creek timeline — flowing stream with markers -->
+      <div class="creek-wrap reveal" id="creek-wrap">
+        <div class="creek-line"></div>
+        <div class="creek-glide" id="creek-glide"></div>
+        <div class="creek-markers" id="creek-markers">
+            <div class="creek-marker" data-idx="0"><div class="cm-dot"></div><span class="cm-year">2020 — 2023</span></div>
+            <div class="creek-marker" data-idx="1"><div class="cm-dot"></div><span class="cm-year">2021 — 2022</span></div>
+            <div class="creek-marker" data-idx="2"><div class="cm-dot"></div><span class="cm-year">2022</span></div>
+            <div class="creek-marker" data-idx="3"><div class="cm-dot"></div><span class="cm-year">2023 — 2024</span></div>
+            <div class="creek-marker" data-idx="4"><div class="cm-dot"></div><span class="cm-year">2025 — 至今</span></div>
         </div>
       </div>
-    </section>
-
-    <section class="section" id="capabilities">
-      <div class="section-label">// capabilities.exe</div>
-      <h2 class="section-title">三重引擎</h2>
-      <div class="capabilities-grid">
-        <div class="capability-card reveal"><div class="card-icon">📊</div><h3>资本视角</h3><p>股权服务、资本市场分析、企业融资逻辑——从金融底层理解商业运转。</p></div>
-        <div class="capability-card reveal"><div class="card-icon">🏛️</div><h3>政策嗅觉</h3><p>政府事务协同、园区招商运营、政策解读与落地——在公共与商业之间找到通路。</p></div>
-        <div class="capability-card reveal"><div class="card-icon">🤖</div><h3>AI 建造</h3><p>用 AI 辅助开发把工作流变成产品——从需求拆解到系统上线，全链路交付。</p></div>
-      </div>
-    </section>
-
-    <section class="section" id="about">
-      <div class="section-label">// about.log</div>
-      <h2 class="section-title">关于我</h2>
-      <div class="about-inner reveal">
-        <p class="about-text">南洋理工国际政治经济学硕士。现于浙江股权服务集团，参与政府事务、资本市场分析、园区招商与数字化系统建设。</p>
-        <p class="about-text">我的路径不是单一标签——在国际商业、政策研究、招商运营和 AI 辅助开发之间持续连接。擅长把模糊问题结构化，把工作方式产品化。</p>
-        <div class="stats-row">
-          <div class="stat-item"><div class="stat-number">3+</div><div class="stat-label">核心领域</div></div>
-          <div class="stat-item"><div class="stat-number">N+</div><div class="stat-label">交付项目</div></div>
-          <div class="stat-item"><div class="stat-number">∞</div><div class="stat-label">建造中</div></div>
+    </div>
+  </div>
+  <div class="page" id="page-contact">
+    <div class="contact-page">
+      <div class="sec-label reveal">Contact</div>
+      <h2 class="reveal">Get in <em>Touch</em></h2>
+      <div class="contact-grid reveal">
+        <div class="contact-left">
+          <div class="contact-status"><strong>📍 杭州</strong> · 随时到岗</div>
+          <div class="contact-links">
+            <a href="https://github.com/ellaxiexiexie-beep" target="_blank" class="contact-item">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+              <span>ellaxiexiexie-beep</span>
+            </a>
+            <a href="https://www.linkedin.com/in/ella-xie-715aba2a6" target="_blank" class="contact-item">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="8" width="5" height="13" rx="1"/><circle cx="4.5" cy="4" r="2.5"/><path d="M11 21v-7.5c0-1.9 1.6-3.5 3.5-3.5s3.5 1.6 3.5 3.5V21"/></svg>
+              <span>Ella Xie</span>
+            </a>
+            <a href="tel:+8615958021569" class="contact-item">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16.6 14.3c-.3-.3-.8-.5-1.2-.4l-2.8.5c-.3.1-.7 0-.9-.2-1-1-2.5-2.5-3.5-3.5-.2-.2-.3-.6-.2-.9l.5-2.8c.1-.4-.1-.9-.4-1.2L5.4 3.1c-.3-.3-.8-.4-1.2-.3L2.6 3.3c-.5.1-.9.5-1 .9-.5 2-.3 4.9 1.5 7.8 2 3.2 5.2 5.9 8.4 7.4 2.9 1.3 5.5 1.2 7.5.5.4-.1.8-.5.9-1l.5-1.6c.1-.4 0-.9-.3-1.2l-2.5-2.8z"/></svg>
+              <span>+86 15958021569</span>
+            </a>
+            <a href="mailto:15958021569@163.com" class="contact-item">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 4-10 8L2 4"/></svg>
+              <span>15958021569@163.com</span>
+            </a>
+          </div>
+        </div>
+        <div class="contact-right">
+          <div class="contact-illustration">
+            <img src="contact-illustration.png" alt="illustration">
+          </div>
+          <a href="resume-ella-xie.pdf" target="_blank" class="rc-btn">⬇ 下载简历 (PDF)</a>
         </div>
       </div>
-    </section>
-
-    <section class="section" id="projects">
-      <div class="section-label">// projects.dir</div>
-      <h2 class="section-title">项目孵化中</h2>
-      <div class="projects-grid">
-        <div class="project-card reveal"><div class="scan-line"></div><div class="project-status">● INCOMING</div><h3>项目 01</h3><p>待揭晓 · 更多产品正在建造中</p></div>
-        <div class="project-card reveal"><div class="scan-line"></div><div class="project-status">● INCOMING</div><h3>项目 02</h3><p>待揭晓 · 更多产品正在建造中</p></div>
+    </div>
+  </div>
+  <footer id="footer" class="reveal">
+    <div class="bottom">
+      <p class="footer-quote">I will not accept a life I do not deserve.</p>
+      <div class="footer-icons">
+        <a href="https://github.com/ellaxiexiexie-beep" target="_blank" title="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/ella-xie-715aba2a6" target="_blank" title="LinkedIn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="8" width="5" height="13" rx="1"/><circle cx="4.5" cy="4" r="2.5"/><path d="M11 21v-7.5c0-1.9 1.6-3.5 3.5-3.5s3.5 1.6 3.5 3.5V21"/></svg>
+        </a>
       </div>
-    </section>
+    </div>
+  </footer>
+</main>
 
-    <section class="section" id="contact">
-      <div class="section-label">// contact.ping</div>
-      <h2 class="section-title">建立连接</h2>
-      <div class="contact-inner reveal">
-        <div class="contact-links">
-          <a href="mailto:ella@example.com" class="contact-link"><span class="icon">✉️</span> Email</a>
-          <a href="#" class="contact-link"><span class="icon">🔗</span> LinkedIn</a>
-          <a href="#" class="contact-link"><span class="icon">💬</span> 微信</a>
-        </div>
-      </div>
-    </section>
+<!-- Detail Lightbox -->
+<div id="detail-overlay" class="detail-overlay" onclick="closeDetail()">
+  <div class="detail-modal" onclick="event.stopPropagation()">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
 
-    <footer class="site-footer">
-      <p>© 2026 <span>谢一涵 Ella</span> · Building at the intersection</p>
-    </footer>
-  </main>
+<script>
+const $=id=>document.getElementById(id);
+const A=$('hero-video-a'),B=$('hero-video-b');
+const heroBg=$('hero-bg'),hint=$('hero-hint'),heroText=$('hero-text'),curtain=$('curtain');
+const dot=$('cursor-dot'),ring=$('cursor-ring'),header=$('header'),nav=$('nav');
+const fxCanvas=$('hero-fx'),fxCtx=fxCanvas.getContext('2d');
 
-  <script type="module">
-  /* ============================================
-     3D MIRROR SHATTER — Three.js × Cyberpunk
-     Inline module (works with importmap + CDN)
-     ============================================ */
+let unlocked=false;
+let curtainDone=false;
+let watchEndFn=null;let curtainT1=null,curtainT2=null;let curtainActive=false;
 
-  import * as THREE from 'three';
-  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+// ===== NATIVE VIDEO LOOP: timeupdate seek at d-0.5, no canvas =====
+// MP4 seeks fast enough that skipping 2 draw calls isn't needed.
+// Show native video A directly.
+A.style.opacity='1';A.style.zIndex='1';
+A.play().catch(()=>{});
 
-  // ─── CONFIG ────────────────────────────
-  const PHOTO_PATH = '../assets/images/ella-night.jpg';
-  const GRID_COLS = 10, GRID_ROWS = 14;
-  const TOTAL_DURATION = 5.5;
-  const T_INTRO = 0.8, T_SHATTER = 1.3, T_DRIFT = 3.2, T_ASSEMBLE = 4.2, T_LOCK = 4.8, T_FADE = TOTAL_DURATION;
+A.loop=true;
 
-  // ─── DOM ────────────────────────────────
-  const container = document.getElementById('threeOverlay');
-  const mainContent = document.getElementById('mainContent');
-  const skipHint = document.getElementById('skipHint');
-  const particleLayer = document.getElementById('particleLayer');
+// ===== FX CANVAS =====
+function resizeFx(){
+  const dpr=devicePixelRatio||1;
+  const w=Math.round(innerWidth*1.3),h=Math.round(innerHeight*1.3);
+  fxCanvas.width=w*dpr;fxCanvas.height=h*dpr;
+  fxCanvas.style.width=w+'px';fxCanvas.style.height=h+'px';
+  fxCtx.setTransform(dpr,0,0,dpr,0,0);
+}
+resizeFx();addEventListener('resize',resizeFx);
 
-  // ─── SCENE ──────────────────────────────
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#050510');
-  scene.fog = new THREE.FogExp2('#050510', 0.00015);
+// ===== CLICK: load video-2.mov, switch =====
+function doSwitch(e){
+  if(e&&e.target.closest&&e.target.closest('#header,#nav'))return;
+  if(unlocked||cur!=='home')return;
+  unlocked=true;
+  hint.classList.add('gone');
+  heroText.style.transition='opacity 0s';heroText.classList.add('hidden');heroText.style.opacity='0';
+  console.log('🔓 Switching to video 2');
 
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
-  camera.position.set(0, 0, 8);
+  // Stop loop, hide A
+  A.loop=false;A.pause();
+  A.style.opacity='0';A.style.zIndex='0';
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
-  container.appendChild(renderer.domElement);
+  // Show & play B
+  B.style.opacity='1';B.style.zIndex='1';
+  B.play().catch(()=>{});
 
-  const composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 1.2, 0.5, 0.3);
-  bloomPass.threshold = 0.45; bloomPass.strength = 1.3; bloomPass.radius = 0.6;
-  composer.addPass(bloomPass);
-
-  // ─── LIGHTING ───────────────────────────
-  scene.add(new THREE.AmbientLight('#1a1a3a', 1.2));
-  const keyLight = new THREE.PointLight('#00d4ff', 8, 15); keyLight.position.set(-3, 2.5, 5); scene.add(keyLight);
-  const fillLight = new THREE.PointLight('#ff2d75', 4, 12); fillLight.position.set(3, -1.5, 3); scene.add(fillLight);
-  const rimLight = new THREE.PointLight('#8b5cf6', 5, 10); rimLight.position.set(0, -3, -2); scene.add(rimLight);
-
-  // ─── GRID FLOOR ─────────────────────────
-  (() => {
-    const g = new THREE.Group(), size = 30, step = 0.8, verts = [];
-    for (let i = -size; i <= size; i += step) { verts.push(i,-6,-size, i,-6,size, -size,-6,i, size,-6,i); }
-    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-    g.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color:'#00d4ff', transparent:true, opacity:0.08, depthWrite:false })));
-    const hGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-20,-6,-5), new THREE.Vector3(20,-6,-5)]);
-    g.add(new THREE.Line(hGeo, new THREE.LineBasicMaterial({ color:'#00d4ff', transparent:true, opacity:0.3, depthWrite:false })));
-    scene.add(g);
-  })();
-
-  // ─── CITY SKYLINE ───────────────────────
-  (() => {
-    const g = new THREE.Group();
-    for (let i = 0; i < 30; i++) {
-      const w = 0.3 + Math.random() * 1.2, h = 1 + Math.random() * 8;
-      const box = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.5),
-        new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.58,0.8,0.03+Math.random()*0.08), transparent:true, opacity:0.7, depthWrite:false }));
-      box.position.set((Math.random()-0.5)*24, -6+h/2, -7-Math.random()*6);
-      g.add(box);
+  function watchEnd(){
+    const d=B.duration;
+    if(!d||!isFinite(d))return;
+    if(B.currentTime>=d-0.3){
+      B.removeEventListener('timeupdate',watchEnd);
+      triggerCurtain();
     }
-    scene.add(g);
-  })();
+  }
+  B.addEventListener('timeupdate',watchEnd);
+  watchEndFn=watchEnd;
+}
+document.addEventListener('click',doSwitch);
+document.addEventListener('touchstart',doSwitch,{once:true});
 
-  // ─── DUST ───────────────────────────────
-  const dustPositions = new Float32Array(200 * 3);
-  for (let i = 0; i < 200; i++) { dustPositions[i*3]=(Math.random()-0.5)*16; dustPositions[i*3+1]=(Math.random()-0.5)*12; dustPositions[i*3+2]=-1-Math.random()*8; }
-  const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
-  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color:'#00d4ff', size:0.03, transparent:true, opacity:0.4, blending:THREE.AdditiveBlending, depthWrite:false }));
-  scene.add(dust);
+// ===== CURTAIN → ABOUT =====
+function triggerCurtain(){
+  if(curtainDone)return;curtainDone=true;
+  console.log('🟡 Curtain → About');
+  go('about');
+}
 
-  // ─── VOLUME BEAM ────────────────────────
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.15,2.5,12,16,1,true),
-    new THREE.MeshBasicMaterial({ color:'#00d4ff', transparent:true, opacity:0.03, side:THREE.DoubleSide, depthWrite:false }));
-  beam.position.set(-4,5,3); beam.rotation.z=-0.6; beam.rotation.x=0.4; scene.add(beam);
+// ===== PARTICLES =====
+const PARTICLES=55;let particles=[];
+function spawnParticle(){
+  const cw=Math.round(innerWidth*1.3),ch=Math.round(innerHeight*1.3);
+  return{x:Math.random()*cw,y:Math.random()*ch,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.25-.15,r:Math.random()*2.5+.8,life:1,decay:.002+Math.random()*.004,hue:Math.random()<.4?40:30+Math.random()*15,sat:70+Math.random()*30,light:55+Math.random()*40};
+}
+for(let i=0;i<PARTICLES;i++)particles.push(spawnParticle());
+function drawParticles(){
+  const cw=Math.round(innerWidth*1.3),ch=Math.round(innerHeight*1.3);
+  fxCtx.clearRect(0,0,cw,ch);
+  const waterTop=ch*.7,breath=Math.sin(performance.now()/1000*1.2)*.5+.5;
+  const g=fxCtx.createLinearGradient(0,waterTop,0,ch);
+  g.addColorStop(0,'rgba(255,180,40,0)');
+  g.addColorStop(.15,`rgba(255,166,30,${.03+.02*breath})`);
+  g.addColorStop(.4,`rgba(255,140,20,${.06+.03*breath})`);
+  g.addColorStop(.7,`rgba(255,120,15,${.08+.04*breath})`);
+  g.addColorStop(1,`rgba(255,100,10,${.04+.02*breath})`);
+  fxCtx.fillStyle=g;fxCtx.fillRect(0,waterTop,cw,ch-waterTop);
+  for(let i=0;i<particles.length;i++){
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.life-=p.decay;
+    if(p.life<=0)particles[i]=spawnParticle();
+    const r=fxCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*3);
+    r.addColorStop(0,`hsla(${p.hue},${p.sat}%,${p.light}%,${p.life*.9})`);
+    r.addColorStop(.4,`hsla(${p.hue},${p.sat}%,${p.light}%,${p.life*.35})`);
+    r.addColorStop(1,`hsla(${p.hue},${p.sat}%,${p.light}%,0)`);
+    fxCtx.fillStyle=r;fxCtx.beginPath();fxCtx.arc(p.x,p.y,p.r*3,0,Math.PI*2);fxCtx.fill();
+    fxCtx.fillStyle=`hsla(${p.hue},${p.sat}%,${p.light+15}%,${p.life*.85})`;
+    fxCtx.beginPath();fxCtx.arc(p.x,p.y,p.r,0,Math.PI*2);fxCtx.fill();
+  }
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
 
-  // ─── SHOCKWAVE ──────────────────────────
-  const shockwave = new THREE.Mesh(new THREE.TorusGeometry(1,0.02,16,80),
-    new THREE.MeshBasicMaterial({ color:'#00e5ff', transparent:true, opacity:0, depthWrite:false }));
-  shockwave.visible = false; scene.add(shockwave);
+// ===== CURSOR =====
+let mx=innerWidth/2,my=innerHeight/2,dx=mx,dy=my,rx=mx,ry=my;
+addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+function animCursor(){
+  dx+=(mx-dx)*.35;dy+=(my-dy)*.35;rx+=(mx-rx)*.12;ry+=(my-ry)*.12;
+  dot.style.transform=`translate(${dx}px,${dy}px) translate(-50%,-50%)`;
+  ring.style.transform=`translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+document.querySelectorAll('a,button,.case,#menu-btn').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{dot.classList.add('hover');ring.classList.add('hover')});
+  el.addEventListener('mouseleave',()=>{dot.classList.remove('hover');ring.classList.remove('hover')});
+});
 
-  // ─── MIRROR & FRAGMENTS ─────────────────
-  let mirrorPlane = null, planeW = 3.4, planeH = 5.1, photoTexture = null;
-  const fragments = [], fragmentGroup = new THREE.Group(); scene.add(fragmentGroup);
+// ===== 3D PARALLAX =====
+let rY=0,rX=0;
+function parallax3D(){
+  const cx=innerWidth/2,cy=innerHeight/2;
+  rY+=(((mx-cx)/cx)*3.5-rY)*.06;rX+=(((cy-my)/cy)*2-rX)*.06;
+  heroBg.style.transform=`rotateY(${rY}deg) rotateX(${rX}deg)`;
+  heroText.style.transform=`translate(calc(-50% + ${((mx-cx)/cx)*-18}px),${((my-cy)/cy)*-12}px)`;
+  requestAnimationFrame(parallax3D);
+}
+parallax3D();
 
-  function createMirrorMat() {
-    return new THREE.MeshStandardMaterial({ map:photoTexture, roughness:0.22, metalness:0.85, side:THREE.DoubleSide });
+// ===== NAVIGATION =====
+let cur='home';
+function updateNavActive(p){
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('active'));
+  const l=document.querySelector(`#nav a[data-p="${p}"]`);if(l)l.classList.add('active');
+}
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('show'));
+  const tgt=$('page-'+p);if(tgt)tgt.classList.add('show');
+  updateHeroVisibility(p==='home');
+}
+function resetHome(){
+  clearTimeout(curtainT1);clearTimeout(curtainT2);
+  if(watchEndFn){B.removeEventListener('timeupdate',watchEndFn);watchEndFn=null;}
+  unlocked=false;curtainDone=false;
+  hint.classList.remove('gone');
+  heroText.style.transition='';heroText.classList.remove('hidden');heroText.style.opacity='';
+  B.pause();
+  B.currentTime=0;
+  B.style.opacity='0';B.style.zIndex='0';
+  A.loop=true;A.style.opacity='1';A.style.zIndex='1';
+  A.currentTime=0;A.play().catch(()=>{});
+}
+
+function updateHeroVisibility(show){
+  const hero=document.getElementById('hero');
+  const spacer=document.getElementById('hero-spacer');
+  if(!hero||!spacer)return;
+  hero.style.display=show?'':'none';
+  spacer.style.display=show?'':'none';
+}
+window.go=function(p){
+  if(p===cur||curtainActive)return;
+  if(p==='home'){resetHome();updateNavActive('home');switchPage('home');scrollTo({top:0,behavior:'smooth'});cur='home';updateHeroVisibility(true);setTimeout(revealCheck,600);return;}
+    curtainActive=true;
+  curtain.classList.add('show');
+  curtainT1=setTimeout(()=>{
+    if(!curtainActive){curtainActive=false;return;}
+    cur=p;updateNavActive(p);switchPage(p);
+    revealCheck();
+    curtainT2=setTimeout(()=>{
+      if(!curtainActive){curtainActive=false;return;}
+      curtain.style.transform='translateY(100%)';
+      setTimeout(()=>{curtain.classList.remove('show');curtain.style.transform='translateY(-100%)';curtainDone=true;curtainActive=false;window.scrollTo(0,0);},700);
+    },800);
+  },500);
+};
+function revealCheck(){
+  document.querySelectorAll('.reveal').forEach(el=>{if(el.getBoundingClientRect().top<innerHeight*.85)el.classList.add('on');});
+}
+addEventListener('scroll',revealCheck,{passive:true});revealCheck();
+addEventListener('scroll',()=>{header.classList.toggle('scrolled',scrollY>50);if(!heroText.classList.contains('hidden'))heroText.style.opacity=Math.max(0,1-scrollY/500);},{passive:true});
+// scroll up to hero → reset to video A + home page
+addEventListener('scroll',()=>{
+  if(scrollY<150&&unlocked&&curtainDone&&cur==='home'){
+    resetHome();cur='home';
+    updateNavActive('home');switchPage('home');
+    scrollTo({top:0,behavior:'instant'});
+  }
+},{passive:true});
+window.toggleMenu=()=>nav.classList.toggle('open');
+
+// ===== RENDER =====
+$('cases').innerHTML=$('work-cases').innerHTML=[
+  {c:'个人项目',n:'个人作品集网站',d:'墨绿×金色视觉系统 · HERO 粒子动画 · 波波卡翻转 · 无框架纯手工',img:'hero-poster.jpg',
+   lightbox:{
+     client:'个人项目 · 独立开发',
+     sections:[
+       {label:'做什么',text:'从设计到开发独立交付个人作品集网站 "Mini Wander — a Code Boutique"。既是展示作品的载体，本身也是作品。'},
+       {label:'核心功能',
+        bullets:[
+          '自定义视觉系统 — 墨绿+金色配色、手绘光标、颗粒噪点背景',
+          'Hero 动画 — 视频背景 × 3D 视差 × 粒子特效 × 呼吸动画',
+          '波波卡时间轴 — 5 张 frosted-glass polaroid 卡片浮于水波，翻转展示背面',
+          '溪流时间线 — 配合卡片翻转动效的流动光点时间轴',
+          '入场体验 — 幕布动画过渡，视频播完自动进入 About 页',
+          '全站无框架 — 纯 HTML/CSS/JS，零依赖'
+        ]},
+       {label:'技术栈',text:'HTML/CSS/JS · ChatGPT/Codex 辅助全流程开发 · 响应式适配'}
+     ]
+   }},
+  {c:'浙股集团',n:'园区招商管理 SaaS',d:'从零搭建轻量级招商管理系统，项目池+拓展池双模块，状态自动流转，风险智能预警',img:'screenshot-zhaoshang.png',link:'https://ellaxiexiexie-beep.github.io/investment-platform/'},
+  {c:'个人项目',n:'周报小工具',d:'为一线员工设计的手机周报工具：模板引导、语音输入、一键生成、无需登录，扫码即用。适合不会用 AI 的基层员工快速交周报。',img:'weekly-report-screenshot.png',link:'https://ellaxiexiexie-beep.github.io/weekly-report/'},
+  {c:'浙股集团',n:'园区产业分析与产业链图谱',d:'常山/上虞园区产业研究，60+企业分层分类，补链方向识别',img:'industry-chain-map-v2.png',
+   lightbox:{
+     client:'浙股集团 · 产业研究',
+     sections:[
+       {label:'做什么',text:'为常山、上虞两个产业园区做系统性产业研究。覆盖 60+ 家企业，从行业属性、成长阶段、规范程度三个维度完成分层分类，并基于产业链图谱分析识别补链方向和招商引资重点。'},
+       {label:'怎么做的',
+        bullets:[
+          '三维分类框架 — 按行业属性（智能制造/新材料/数字经济/生物医药）× 成长阶段（初创/成长/成熟/拟上市）× 规范程度 对企业分层分类',
+          '产业链图谱 — 绘制上游原料→中游精密制造→下游装备全链条节点，标注存量企业与缺失环节',
+          '补链方向识别 — 基于图谱分析结果，明确哪些环节需要重点招商引资'
+        ]},
+       {label:'产出',text:'《常山县股权市场试点工作报告》— 被地方政府采纳，作为区域产业规划的决策依据。'}
+     ]
+   }},
+  {c:'个人项目',n:'Skill 技能',d:'50+ AI 辅助开发的可复用技能，覆盖简历求职、文档报告、内容创作、占星等六大领域',img:'skill-icon.png',
+   lightbox:{
+     client:'个人项目 · AI-Native 开发',
+     sections:[
+       {label:'做什么',text:'基于 AI 工具（ChatGPT/Codex/WorkBuddy）从零搭建个人技能产品体系，累计 50+ 个可独立运行的 AI 技能。'},
+       {label:'分类',
+        bullets:[
+          '简历求职类 · resume-assistant、cover-letter-generator、interview-prep 等 10+',
+          '文档报告类 · report-helper、weekly-report、notion-meeting 等 10+',
+          '内容创作类 · xhs-content-creator、portfolio-case-study 等 8+',
+          '占星系列 · vedic-calculator、vedic-career、vedic-rectifier 等 5 个',
+          '办公效率类 · pptx-generator、xlsx、application-form-filler 等 6+',
+          '其他 · figma、research、learning-coach、wechat-miniprogram 等 10+'
+        ]},
+       {label:'方法论',
+        bullets:[
+          '需求识别 → AI 快速原型 → 真实用户反馈迭代 → 沉淀为可复用模板',
+          '每个技能都是一个独立的 AI 工作流，而非一次性脚本',
+          '非技术背景 × AI 工具 = 持续交付产品的能力'
+        ]},
+       {label:'成果',text:'形成个人 AI-Native 开发能力体系——覆盖 6 大领域、50+ 可复用技能，部分已在团队和社群中被他人使用。'}
+     ]
+   }},
+  {c:'天识科技 / 物产中大',n:'跨境选品与供应链研究',d:'100+企业、500+货品匹配，全球竞品分析与成本结构研究',img:'supply-chain-cover.png',
+   lightbox:{
+     client:'天识科技 · 物产中大（实习经历）',
+     sections:[
+       {label:'【天识科技】数据分析与跨境选品',
+        bullets:[
+          '四维成本分析框架 — 从原料成本、制造工艺复杂度、物流费率、平台佣金四个维度拆解商品利润结构',
+          '覆盖消耗品、家居、3C 电子等多品类，完成 100+ 款商品的全维度对比分析',
+          '建立量化选品模型，将传统"凭经验挑品"转化为数据驱动的体系化方法',
+          '为 100+ 家跨境企业匹配 500+ 款严选货品，输出标准化选品推荐清单'
+        ]},
+       {label:'【物产中大】产业链研究与 SAP 实战',
+        bullets:[
+          'PVC 产业链调研 — 跟踪上游电石价格波动、中游加工产能、下游需求及进出口政策',
+          '建立"原料→加工→需求→政策"四环分析框架，独立完成产业链分析报告',
+          '日均处理 500+ 笔订单及库存数据，通过 SAP 拉通销售与财务口径'
+        ]}
+     ]
+   }}
+].map((x,i)=>{
+  const inner=`<img src="${x.img}" alt="${x.n}" loading="lazy"><div class="info"><div class="client">${x.c}</div><div class="name">${x.n}</div><div class="desc">${x.d}</div></div>`;
+  if(x.link) return `<a href="${x.link}" target="_blank" class="case reveal d${Math.min(i,3)}">${inner}</a>`;
+  if(x.lightbox) return `<div onclick="openLightbox(${i})" class="case reveal d${Math.min(i,3)}" style="cursor:pointer">${inner}</div>`;
+  return `<div class="case reveal d${Math.min(i,3)}">${inner}</div>`;
+}).join('');
+
+$('expertise').innerHTML=$('work-expertise').innerHTML=[
+  {t:'AI-Native 开发',d:'用 ChatGPT / Codex / WorkBuddy 从需求到交付，独立完成从前端到业务逻辑的全链路开发。'},
+  {t:'产品思维',d:'能识别真实痛点、翻译成产品方案。招商系统的业务规则和状态机设计全部来自一线运营经验。'},
+  {t:'产业分析',d:'产业链图谱构建、企业分层分类、补链方向识别。用数据支撑精准招商决策。'},
+  {t:'跨境运营',d:'海外硕士背景 + 跨境企业实操经验。英语流利，能独立完成国际业务对接。'},
+  {t:'金融基础',d:'CFA Level 1 Candidate。能读懂财务报表、理解商业模式和成本结构。'},
+  {t:'个人品牌建设',d:'不满足于做执行。用作品集网站、AI 技能工具箱持续输出，建立可感知的个人能力标签。'},
+].map((x,i)=>`<div class="exp-card reveal d${Math.min(i,3)}"><div class="exp-num">0${i+1}</div><div class="exp-title">${x.t}</div><div class="exp-desc">${x.d}</div></div>`).join('');
+
+setTimeout(revealCheck,500);
+
+// ═══════════ WATER WAVE + FLIP + CENTER + CREEK TIMELINE ═══════════
+let activeMemory=-1,waveRAF=null,centerAnim=null;
+const CARD_POSITIONS={};
+
+// ──── Wave positioning ────
+function positionWaveCards(forceAll){
+  const stage=document.getElementById('wave-stage');
+  if(!stage)return;
+  const cards=stage.querySelectorAll('.wave-card');
+  if(!cards.length)return;
+  const n=cards.length,ww=stage.clientWidth,stageH=stage.clientHeight;
+  const t=performance.now()/1000,speed=.4,amp=22,freq=.6;
+  const isMobile=ww<768;
+  const cw=isMobile?150:230,ch=isMobile?200:307;
+  const ccw=isMobile?180:265,cch=isMobile?240:353;
+  const gap=isMobile?8:18;
+  const totalW=(n-2)*cw+2*ccw+(n-1)*gap;
+  const startX=(ww-totalW)/2;
+  for(let i=0;i<n;i++){
+    const w=(i===2)?ccw:cw,h=(i===2)?cch:ch;
+    let x=startX;for(let j=0;j<i;j++)x+=(j===2?ccw:cw)+gap;
+    const phase=t*speed+i/(n-1)*Math.PI*freq*2;
+    const y=(stageH-h)/2+Math.sin(phase)*amp+(i===2?-20:0);
+    const key='idx'+i;
+    if(forceAll||!(key in CARD_POSITIONS))CARD_POSITIONS[key]={x,y,w,h};
+    if(!cards[i].classList.contains('centered')&&!cards[i].classList.contains('dimmed')){
+      cards[i].style.left=x+'px';cards[i].style.top=y+'px';
+      cards[i].style.width=w+'px';cards[i].style.height=h+'px';
+    }
+    if(!cards[i].classList.contains('centered'))CARD_POSITIONS[key]={x,y,w,h};
+  }
+}
+function startWave(){
+  function loop(){positionWaveCards();waveRAF=requestAnimationFrame(loop);}
+  if(waveRAF)cancelAnimationFrame(waveRAF);
+  waveRAF=requestAnimationFrame(loop);
+}
+
+// ──── Animate card to center ────
+function animateToCenter(card,targetX,targetY,targetW,targetH,duration,callback){
+  const startL=parseFloat(card.style.left)||0,startT=parseFloat(card.style.top)||0;
+  const startW=parseFloat(card.style.width)||targetW,startH=parseFloat(card.style.height)||targetH;
+  const startTime=performance.now();
+  function step(now){
+    const p=Math.min((now-startTime)/duration,1);
+    const e=1-Math.pow(1-p,3);
+    card.style.left=(startL+(targetX-startL)*e)+'px';
+    card.style.top=(startT+(targetY-startT)*e)+'px';
+    card.style.width=(startW+(targetW-startW)*e)+'px';
+    card.style.height=(startH+(targetH-startH)*e)+'px';
+    if(p<1)centerAnim=requestAnimationFrame(step);
+    else{if(callback)callback();}
+  }
+  centerAnim=requestAnimationFrame(step);
+}
+
+// ──── Creek timeline ────
+function highlightCreek(idx){
+  const markers=document.querySelectorAll('.creek-marker');
+  const glide=document.getElementById('creek-glide');
+  if(!markers.length)return;
+
+  // Deactivate all
+  markers.forEach(m=>m.classList.remove('active'));
+
+  if(idx<0){
+    glide.classList.remove('visible');
+    return;
   }
 
-  function uv(vx, vy) { return { u:(vx+planeW/2)/planeW, v:(vy+planeH/2)/planeH }; }
+  // Activate target marker
+  const target=markers[idx];
+  target.classList.add('active');
 
-  function startScene() {
-    mirrorPlane = new THREE.Mesh(new THREE.PlaneGeometry(planeW, planeH, GRID_COLS, GRID_ROWS), createMirrorMat());
-    scene.add(mirrorPlane);
+  // Position glide light at target
+  const targetRect=target.getBoundingClientRect();
+  const wrap=document.getElementById('creek-wrap');
+  const wrapRect=wrap.getBoundingClientRect();
+  const glideLeft=targetRect.left-wrapRect.left+targetRect.width/2-6;
 
-    const cellW = planeW/GRID_COLS, cellH = planeH/GRID_ROWS, jAmt = Math.min(cellW,cellH)*0.28;
-    const pts = [];
-    for (let r = 0; r <= GRID_ROWS; r++) { pts[r] = [];
-      for (let c = 0; c <= GRID_COLS; c++) {
-        const er = (r===0||r===GRID_ROWS), ec = (c===0||c===GRID_COLS);
-        pts[r][c] = { x: c*cellW-planeW/2+(ec?0:(Math.random()-0.5)*jAmt*2), y: -(r*cellH-planeH/2+(er?0:(Math.random()-0.5)*jAmt*2)) };
+  glide.style.left=glideLeft+'px';
+  glide.classList.add('visible');
+}
+
+// ──── Flip card ────
+function flipCard(idx){
+  const stage=document.getElementById('wave-stage');
+  const cards=stage?stage.querySelectorAll('.wave-card'):document.querySelectorAll('.wave-card');
+  if(!cards.length)return;
+
+  // Deselect same card
+  if(activeMemory===idx){
+    const card=cards[idx];
+    if(waveRAF){cancelAnimationFrame(waveRAF);waveRAF=null;}
+    if(centerAnim)cancelAnimationFrame(centerAnim);
+    // Step 1: unflip first (let CSS transition play)
+    card.classList.remove('flipped');
+    cards.forEach(c=>c.classList.remove('dimmed'));
+    activeMemory=-1;
+    highlightCreek(-1);
+    // Step 2: after flip transition completes, remove centered + animate back
+    setTimeout(()=>{
+      card.classList.remove('centered');
+      const pos=CARD_POSITIONS['idx'+idx];
+      if(pos){
+        animateToCenter(card,pos.x,pos.y,pos.w,pos.h,400,()=>{startWave();});
       }
+    },400);
+    return;
+  }
+
+  // Unflip previous
+  if(activeMemory>=0){
+    const prev=cards[activeMemory];
+    prev.classList.remove('flipped');
+    setTimeout(()=>{
+      prev.classList.remove('centered');
+      const ppos=CARD_POSITIONS['idx'+activeMemory];
+      if(ppos){
+        prev.style.left=ppos.x+'px';prev.style.top=ppos.y+'px';
+        prev.style.width=ppos.w+'px';prev.style.height=ppos.h+'px';
+      }
+    },400);
+  }
+
+  activeMemory=idx;
+  const card=cards[idx];
+  cards.forEach((c,i)=>{if(i!==idx)c.classList.add('dimmed');else c.classList.remove('dimmed');});
+
+  const stageRect=stage.getBoundingClientRect();
+  const isMobile=window.innerWidth<768;
+  const cw=isMobile?150:230,ch=isMobile?200:307;
+  const ccw=isMobile?180:265,cch=isMobile?240:353;
+  const tw=(idx===2)?ccw:cw,th=(idx===2)?cch:ch;
+  const targetX=(stageRect.width-tw)/2,targetY=Math.max(0,(stageRect.height-th)/2-10);
+
+  if(waveRAF){cancelAnimationFrame(waveRAF);waveRAF=null;}
+  if(centerAnim)cancelAnimationFrame(centerAnim);
+
+  // Glide the creek light
+  highlightCreek(idx);
+
+  animateToCenter(card,targetX,targetY,tw,th,600,()=>{
+    card.classList.add('centered');
+    setTimeout(()=>card.classList.add('flipped'),900);
+  });
+}
+window.flipCard=flipCard;
+
+// ──── Click outside to unflip ────
+document.addEventListener('click',function(e){
+  if(activeMemory<0)return;
+  const card=document.querySelector('.wave-card[data-idx="'+activeMemory+'"]');
+  if(!card)return;
+  if(!card.contains(e.target))flipCard(activeMemory);
+});
+
+// ──── About page lifecycle ────
+const aboutPg=document.getElementById('page-about');
+if(aboutPg){
+  const obs=new MutationObserver(()=>{
+    if(aboutPg.classList.contains('show')){
+      setTimeout(()=>{positionWaveCards(true);startWave();},500);
+    }else{
+      if(waveRAF){cancelAnimationFrame(waveRAF);waveRAF=null;}
+      if(centerAnim){cancelAnimationFrame(centerAnim);centerAnim=null;}
+      activeMemory=-1;
     }
-    for (let r = 0; r < GRID_ROWS; r++) for (let c = 0; c < GRID_COLS; c++) {
-      [ [pts[r][c],pts[r][c+1],pts[r+1][c+1]], [pts[r][c],pts[r+1][c+1],pts[r+1][c]] ].forEach(tri => {
-        const vs = new Float32Array(9), us = new Float32Array(6);
-        for (let i = 0; i < 3; i++) { vs[i*3]=tri[i].x; vs[i*3+1]=tri[i].y; const u=uv(tri[i].x,tri[i].y); us[i*2]=u.u; us[i*2+1]=1-u.v; }
-        const geo = new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(vs,3)); geo.setAttribute('uv',new THREE.BufferAttribute(us,2)); geo.computeVertexNormals();
-        const m = new THREE.Mesh(geo, createMirrorMat());
-        m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color:'#00e5ff', transparent:true, opacity:0.5 })));
-        const cx=(tri[0].x+tri[1].x+tri[2].x)/3, cy=(tri[0].y+tri[1].y+tri[2].y)/3, dist=Math.sqrt(cx*cx+cy*cy), a=Math.atan2(cy,cx), sp=2.5+dist*0.6+Math.random()*3;
-        fragments.push({ mesh:m, edge:m.children[0], origPos:new THREE.Vector3(0,0,0), origRot:new THREE.Euler(0,0,0),
-          vel:new THREE.Vector3(Math.cos(a)*sp+(Math.random()-0.5)*2, Math.sin(a)*sp+(Math.random()-0.5)*2, (Math.random()-0.5)*4),
-          aVel:new THREE.Vector3((Math.random()-0.5)*8,(Math.random()-0.5)*8,(Math.random()-0.5)*6),
-          dPh:Math.random()*Math.PI*2, dSp:0.3+Math.random()*0.7, dAmp:0.1+Math.random()*0.4 });
-        fragmentGroup.add(m);
-      });
+  });
+  obs.observe(aboutPg,{attributes:true,attributeFilter:['class']});
+}
+
+let resizeTimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{
+    if(aboutPg&&aboutPg.classList.contains('show')&&activeMemory<0)positionWaveCards(true);
+  },250);
+});
+
+// ═══════════ LIGHTBOX ═══════════
+const LIGHTBOX_DATA = $('cases') ? (function(){
+  const items = $('cases').innerHTML ? [] : [];
+  // We stored lightbox data; retrieve by index
+  return window._lightboxItems || [];
+})() : [];
+
+function openLightbox(idx){
+  const items = window._lightboxItems;
+  if(!items || !items[idx]) return;
+  const d = items[idx];
+  document.getElementById('lb-title').textContent = d.n;
+  document.getElementById('lb-client').textContent = d.lightbox.client;
+  let html = '';
+  d.lightbox.sections.forEach(s => {
+    html += '<div class="lb-section">';
+    html += `<span class="lb-label">${s.label}</span>`;
+    if(s.text) html += `<div class="lb-text"><p>${s.text}</p></div>`;
+    if(s.bullets){
+      html += '<ul class="lb-bullets">';
+      s.bullets.forEach(b => { html += `<li>${b}</li>`; });
+      html += '</ul>';
     }
-    fragments.forEach(f => f.mesh.visible = false);
+    html += '</div>';
+  });
+  if(d.link){
+    html += `<a href="${d.link}" target="_blank" class="lb-btn">查看演示 →</a>`;
   }
+  document.getElementById('lb-body').innerHTML = html;
+  document.getElementById('lightbox').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
 
-  // ─── ANIMATION ──────────────────────────
-  let aStart = 0, skipped = false, skipP = 0;
-  const ec = t => 1-Math.pow(1-t,3);
-  const eel = t => { if(t===0||t===1)return t; return Math.pow(2,-10*t)*Math.sin((t*10-0.75)*2*Math.PI/3)+1; };
-  const eb = t => { const c1=1.70158; return 1+(c1+1)*Math.pow(t-1,3)+c1*Math.pow(t-1,2); };
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('show');
+  document.body.style.overflow = '';
+}
 
-  function loop(ts) {
-    requestAnimationFrame(loop);
-    if (!aStart) aStart = ts;
-    let t = (ts - aStart) / 1000;
-    if (skipped) { skipP = Math.min(1, skipP+0.05); t = T_DRIFT+(T_ASSEMBLE-T_DRIFT)*eb(skipP); if (skipP>=1) t=T_FADE; }
+// Store lightbox data globally for lookup
+window._lightboxItems = [
+  {n:'个人作品集网站',lightbox:{client:'个人项目 · 独立开发',sections:[
+    {label:'做什么',text:'从设计到开发独立交付个人作品集网站 "Mini Wander — a Code Boutique"。既是展示作品的载体，本身也是作品。'},
+    {label:'核心功能',bullets:['自定义视觉系统 — 墨绿+金色配色、手绘光标、颗粒噪点背景','Hero 动画 — 视频背景 × 3D 视差 × 粒子特效 × 呼吸动画','波波卡时间轴 — 5 张 frosted-glass polaroid 卡片浮于水波，翻转展示背面','溪流时间线 — 配合卡片翻转动效的流动光点时间轴','入场体验 — 幕布动画过渡，视频播完自动进入 About 页','全站无框架 — 纯 HTML/CSS/JS，零依赖']},
+    {label:'技术栈',text:'HTML/CSS/JS · ChatGPT/Codex 辅助全流程开发 · 响应式适配'}
+  ]}},
+  null,
+  null,
+  {n:'园区产业分析与产业链图谱',lightbox:{client:'浙股集团 · 产业研究',sections:[
+    {label:'做什么',text:'为常山、上虞两个产业园区做系统性产业研究。覆盖 60+ 家企业，从行业属性、成长阶段、规范程度三个维度完成分层分类，并基于产业链图谱分析识别补链方向和招商引资重点。'},
+    {label:'怎么做的',bullets:['三维分类框架 — 按行业属性（智能制造/新材料/数字经济/生物医药）× 成长阶段（初创/成长/成熟/拟上市）× 规范程度 对企业分层分类','产业链图谱 — 绘制上游原料→中游精密制造→下游装备全链条节点，标注存量企业与缺失环节','补链方向识别 — 基于图谱分析结果，明确哪些环节需要重点招商引资']},
+    {label:'产出',text:'《常山县股权市场试点工作报告》— 被地方政府采纳，作为区域产业规划的决策依据。'}
+  ]}},
+  {n:'Skill 技能',lightbox:{client:'个人项目 · AI-Native 开发',sections:[
+    {label:'做什么',text:'基于 AI 工具（ChatGPT/Codex/WorkBuddy）从零搭建个人技能产品体系，累计 50+ 个可独立运行的 AI 技能。'},
+    {label:'分类',bullets:['简历求职类 · resume-assistant、cover-letter-generator、interview-prep 等 10+','文档报告类 · report-helper、weekly-report、notion-meeting 等 10+','内容创作类 · xhs-content-creator、portfolio-case-study 等 8+','占星系列 · vedic-calculator、vedic-career、vedic-rectifier 等 5 个','办公效率类 · pptx-generator、xlsx、application-form-filler 等 6+','其他 · figma、research、learning-coach、wechat-miniprogram 等 10+']},
+    {label:'方法论',bullets:['需求识别 → AI 快速原型 → 真实用户反馈迭代 → 沉淀为可复用模板','每个技能都是一个独立的 AI 工作流，而非一次性脚本','非技术背景 × AI 工具 = 持续交付产品的能力']},
+    {label:'成果',text:'形成个人 AI-Native 开发能力体系——覆盖 6 大领域、50+ 可复用技能，部分已在团队和社群中被他人使用。'}
+  ]}},
+  {n:'跨境选品与供应链研究',lightbox:{client:'天识科技 · 物产中大（实习经历）',sections:[
+    {label:'【天识科技】数据分析与跨境选品',bullets:['四维成本分析框架 — 从原料成本、制造工艺复杂度、物流费率、平台佣金四个维度拆解商品利润结构','覆盖消耗品、家居、3C 电子等多品类，完成 100+ 款商品的全维度对比分析','建立量化选品模型，将传统"凭经验挑品"转化为数据驱动的体系化方法','为 100+ 家跨境企业匹配 500+ 款严选货品，输出标准化选品推荐清单']},
+    {label:'【物产中大】产业链研究与 SAP 实战',bullets:['PVC 产业链调研 — 跟踪上游电石价格波动、中游加工产能、下游需求及进出口政策','建立"原料→加工→需求→政策"四环分析框架，独立完成产业链分析报告','日均处理 500+ 笔订单及库存数据，通过 SAP 拉通销售与财务口径']}
+  ]}}
+];
 
-    fragments.forEach(f => {
-      if (t < T_INTRO) { f.mesh.visible = false; f.mesh.position.set(0,0,0); f.mesh.rotation.set(0,0,0); }
-      else if (t < T_SHATTER) { f.mesh.visible = true; if (mirrorPlane&&mirrorPlane.visible) mirrorPlane.visible=false;
-        const ep = ec((t-T_INTRO)/(T_SHATTER-T_INTRO)); f.mesh.position.copy(f.vel.clone().multiplyScalar(ep*1.5)); f.mesh.rotation.set(f.aVel.x*ep,f.aVel.y*ep,f.aVel.z*ep); }
-      else if (t < T_DRIFT) { const dp=(t-T_SHATTER)/(T_DRIFT-T_SHATTER), b=f.vel.clone().multiplyScalar(1.5);
-        f.mesh.position.set(b.x+Math.sin(t*f.dSp+f.dPh)*f.dAmp, b.y+Math.cos(t*f.dSp*1.3+f.dPh)*f.dAmp*0.7, b.z);
-        f.mesh.rotation.set(f.aVel.x*(1-dp*0.7), f.aVel.y*(1-dp*0.7), f.aVel.z*(1-dp*0.7)); }
-      else if (t < T_ASSEMBLE) { const ap=eel(Math.min(1,(t-T_DRIFT)/(T_ASSEMBLE-T_DRIFT)*1.15));
-        f.mesh.position.lerp(f.origPos,ap); f.mesh.rotation.set(THREE.MathUtils.lerp(f.mesh.rotation.x,0,ap),THREE.MathUtils.lerp(f.mesh.rotation.y,0,ap),THREE.MathUtils.lerp(f.mesh.rotation.z,0,ap)); }
-      else { f.mesh.position.copy(f.origPos); f.mesh.rotation.set(0,0,0);
-        if (t>T_LOCK) f.edge.material.opacity = 0.5*(1-Math.min(1,(t-T_LOCK)/(T_FADE-T_LOCK))); }
-    });
+</script>
 
-    const ct = new THREE.Vector3(0,0,8), cl = new THREE.Vector3(0,0,0);
-    if (t<T_INTRO) { const p=t/T_INTRO; ct.set(5*(1-p),0,8-1.5*p); }
-    else if (t<T_SHATTER) { const s=(T_SHATTER-t)/(T_SHATTER-T_INTRO); ct.set((Math.random()-0.5)*0.3*s,(Math.random()-0.5)*0.3*s,6.5); }
-    else if (t<T_ASSEMBLE) { const ap=(t-T_SHATTER)/(T_ASSEMBLE-T_SHATTER); ct.set(Math.sin(ap*1.5)*1.2,Math.cos(ap*0.8)*0.4,6.5+ap*0.5); cl.set(0,0,0); }
-    else { const lp=Math.min(1,(t-T_ASSEMBLE)/(T_LOCK-T_ASSEMBLE)); ct.set(0,0,6.5+lp*2.5); }
-    camera.position.lerp(ct,0.05); camera.lookAt(cl);
-
-    if (t>=T_ASSEMBLE&&t<T_LOCK) { const sp=(t-T_ASSEMBLE)/(T_LOCK-T_ASSEMBLE); shockwave.visible=true; const s=1+sp*4; shockwave.scale.set(s,s,s); shockwave.material.opacity=Math.max(0,0.6*(1-sp)); shockwave.position.z=0.05; }
-    else if (t>=T_LOCK) { shockwave.visible=false; shockwave.material.opacity=0; }
-
-    dust.rotation.y+=0.0003; dust.rotation.x+=0.0001;
-    composer.render();
-
-    if (t>=T_FADE) { container.classList.add('fade-out'); mainContent.classList.add('visible'); skipHint.classList.add('hidden'); if (t>T_FADE+1) container.style.display='none'; }
-  }
-
-  // ─── SKIP ───────────────────────────────
-  const skip = () => { if(skipped)return; skipped=true; skipHint.classList.add('hidden'); if(mirrorPlane)mirrorPlane.visible=false; fragments.forEach(f=>f.mesh.visible=true); };
-  container.addEventListener('click', skip);
-  skipHint.addEventListener('click', e => { e.stopPropagation(); skip(); });
-
-  // ─── RESIZE ─────────────────────────────
-  const resize = () => { const w=innerWidth,h=innerHeight; renderer.setSize(w,h); composer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); };
-  window.addEventListener('resize', resize); resize();
-
-  // ─── CSS PARTICLES ──────────────────────
-  for (let i=0;i<20;i++) { const p=document.createElement('div'); p.className='particle'; p.style.left=Math.random()*100+'%'; p.style.animationDuration=(8+Math.random()*16)+'s'; p.style.animationDelay=Math.random()*8+'s'; p.style.width=p.style.height=(1+Math.random()*2)+'px'; particleLayer.appendChild(p); }
-
-  // ─── SCROLL REVEALS ─────────────────────
-  new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) e.target.classList.add("visible"); }), { threshold: 0.15 })
-    .observe && document.querySelectorAll('.reveal').forEach(el => new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) e.target.classList.add("visible"); }), { threshold: 0.15 }).observe(el));
-
-  // ─── LOAD & START ───────────────────────
-  function computePlane(iw,ih) {
-    const vH = 2*7*Math.tan(THREE.MathUtils.degToRad(27.5)), tH = vH*0.68, asp = iw/ih;
-    planeH=tH; planeW=tH*asp; const vW=vH*(innerWidth/innerHeight); if(planeW>vW*0.8){planeW=vW*0.8;planeH=planeW/asp;}
-  }
-  function fallback() {
-    const c=document.createElement('canvas'); c.width=512;c.height=768; const ctx=c.getContext('2d');
-    const g=ctx.createLinearGradient(0,0,c.width,c.height); g.addColorStop(0,'#0a0a2e');g.addColorStop(0.5,'#1a0a3e');g.addColorStop(1,'#0a1a2e');
-    ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height); ctx.strokeStyle='rgba(0,212,255,0.3)';ctx.lineWidth=1;
-    for(let i=0;i<20;i++){ctx.beginPath();ctx.moveTo(Math.random()*c.width,Math.random()*c.height);ctx.lineTo(Math.random()*c.width,Math.random()*c.height);ctx.stroke();}
-    photoTexture=new THREE.CanvasTexture(c);photoTexture.colorSpace=THREE.SRGBColorSpace;computePlane(c.width,c.height);
-    startScene();requestAnimationFrame(loop);
-  }
-  new THREE.TextureLoader().load(PHOTO_PATH, tex => { photoTexture=tex;photoTexture.colorSpace=THREE.SRGBColorSpace;computePlane(tex.image.width,tex.image.height);startScene();requestAnimationFrame(loop); }, undefined, fallback);
-
-  // Scroll reveals fix
-  setTimeout(() => {
-    const obs = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) e.target.classList.add("visible"); }), { threshold: 0.15 });
-    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-  })();
-  </script>
+<div id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <div id="lightbox-inner">
+    <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+    <h3 id="lb-title"></h3>
+    <span class="lb-client" id="lb-client"></span>
+    <div id="lb-body"></div>
+    <div id="lb-link" style="display:none"></div>
+  </div>
+</div>
 </body>
 </html>
